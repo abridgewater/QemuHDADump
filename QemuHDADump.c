@@ -114,7 +114,6 @@ int main(int argc, char *argv[])
 	char *trace_line = NULL;
 	unsigned short framenumber = 0;
 	int fd;
-	unsigned int i = 0;
 	unsigned int total_verbs = 0;
 //	char cont[] = "cont\n";
 
@@ -177,32 +176,23 @@ int main(int argc, char *argv[])
 				break;
 			case '8':
 				if(trace_line[tlo + 45] != ',') {
-					printf("Current verb 0x%04x Region0+", total_verbs);
-					for(i = 0; trace_line[i + (tlo + 42)] != ')'; i++) {
-						printf("%c", trace_line[i + (tlo + 42)]);
-					}
-				putchar('\n');
+					printf("Current verb 0x%04x Region%d+0x%lx, 0x%x, %d\n",
+					       total_verbs, event.pci_region, event.offset,
+					       event.data, event.width);
 				}
 				break;
 			case '1':
-				printf("Current verb 0x%04x Region0+", total_verbs);
-				for(i = 0; trace_line[i + (tlo + 42)] != ')'; i++) {
-					printf("%c", trace_line[i + (tlo + 42)]);
-				}
-				putchar('\n');
+				printf("Current verb 0x%04x Region%d+0x%lx, 0x%x, %d\n",
+				       total_verbs, event.pci_region, event.offset,
+				       event.data, event.width);
 				break;
 			}
 
 			break;
 		default:
-			printf("Current verb 0x%04x tlo = %i Region%c+", total_verbs, tlo, switch_check);
-			i = 0;
-			while(trace_line[i + (tlo + 42)] != ')') {
-				printf("%c", trace_line[i + (tlo + 42)]);
-				i++;
-			}
-			putchar('\n');
-
+			printf("Current verb 0x%04x tlo = %i Region%d+0x%lx, 0x%x, %d\n",
+			       total_verbs, tlo, event.pci_region, event.offset,
+			       event.data, event.width);
 			break;
 		}
 		if (trace_line)
