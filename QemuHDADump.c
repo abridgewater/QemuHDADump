@@ -152,32 +152,46 @@ int main(int argc, char *argv[])
 				|| ((event.data & 0xffffffff) == 0x4))
 			    && (total_verbs > 20)) {
 				dumpMem(corb_buffer_location, framenumber, fd, 1);
-			} else if (trace_line[tlo + 44] == '4') {
-				switch(trace_line[tlo + 45]) {
-				case '0':
-        				memset(corb_buffer_location, 0, sizeof(corb_buffer_location));
+			} else if ((event.offset == 0x40)
+				   || ((event.offset & 0xfffffff0) == 0x400)
+				   || ((event.offset & 0xffffff00) == 0x4000)
+				   || ((event.offset & 0xfffff000) == 0x40000)
+				   || ((event.offset & 0xffff0000) == 0x400000)
+				   || ((event.offset & 0xfff00000) == 0x4000000)
+				   || ((event.offset & 0xff000000) == 0x40000000)) {
+					memset(corb_buffer_location, 0, sizeof(corb_buffer_location));
 					get_corb_buffer_addr(trace_line, corb_buffer_location, tlo);
-					break;
-				case '8':
+			} else if ((event.offset == 0x48)
+				   || ((event.offset & 0xfffffff0) == 0x480)
+				   || ((event.offset & 0xffffff00) == 0x4800)
+				   || ((event.offset & 0xfffff000) == 0x48000)
+				   || ((event.offset & 0xffff0000) == 0x480000)
+				   || ((event.offset & 0xfff00000) == 0x4800000)
+				   || ((event.offset & 0xff000000) == 0x48000000)) {
 					total_verbs += 4;
 					printf("0x%04x \n", total_verbs);
 					if(trace_line[tlo + 50] == 'f' && trace_line[tlo + 51] == 'f') {
 						dumpMem(corb_buffer_location, framenumber, fd, 0);
 						framenumber++;
 					}
-					break;
-				}
-			} else if (trace_line[tlo + 44] == '8') {
-				if(trace_line[tlo + 45] != ',') {
-					printf("Current verb 0x%04x Region%d+0x%lx, 0x%x, %d\n",
-					       total_verbs, event.pci_region, event.offset,
-					       event.data, event.width);
-				}
-			} else if (trace_line[tlo + 44] == '1') {
-				printf("Current verb 0x%04x Region%d+0x%lx, 0x%x, %d\n",
-				       total_verbs, event.pci_region, event.offset,
-				       event.data, event.width);
-				break;
+			} else if (((event.offset & 0xfffffff0) == 0x80)
+				   || ((event.offset & 0xffffff00) == 0x800)
+				   || ((event.offset & 0xfffff000) == 0x8000)
+				   || ((event.offset & 0xffff0000) == 0x80000)
+				   || ((event.offset & 0xfff00000) == 0x800000)
+				   || ((event.offset & 0xff000000) == 0x8000000)
+				   || ((event.offset & 0xf0000000) == 0x80000000)
+				   || (event.offset == 0x1)
+				   || ((event.offset & 0xfffffff0) == 0x10)
+				   || ((event.offset & 0xffffff00) == 0x100)
+				   || ((event.offset & 0xfffff000) == 0x1000)
+				   || ((event.offset & 0xffff0000) == 0x10000)
+				   || ((event.offset & 0xfff00000) == 0x100000)
+				   || ((event.offset & 0xff000000) == 0x1000000)
+				   || ((event.offset & 0xf0000000) == 0x10000000)) {
+			    printf("Current verb 0x%04x Region%d+0x%lx, 0x%x, %d\n",
+				   total_verbs, event.pci_region, event.offset,
+				   event.data, event.width);
 			}
 
 			break;
