@@ -141,14 +141,12 @@ int main(int argc, char *argv[])
 		switch(event.pci_region) {
 		/* this is the HDA register region */
 		case 0:
-			switch(trace_line[tlo + 44]) {
-			case '2':
+			if (trace_line[tlo + 44] == '2') {
 				if(trace_line[tlo + 45] == '0') {
 					if(trace_line[tlo + 50] == '4' && total_verbs > 20)
 						dumpMem(corb_buffer_location, framenumber, fd, 1);
 				}
-				break;
-			case '4':
+			} else if (trace_line[tlo + 44] == '4') {
 				switch(trace_line[tlo + 45]) {
 				case '0':
         				memset(corb_buffer_location, 0, sizeof(corb_buffer_location));
@@ -163,15 +161,13 @@ int main(int argc, char *argv[])
 					}
 					break;
 				}
-				break;
-			case '8':
+			} else if (trace_line[tlo + 44] == '8') {
 				if(trace_line[tlo + 45] != ',') {
 					printf("Current verb 0x%04x Region%d+0x%lx, 0x%x, %d\n",
 					       total_verbs, event.pci_region, event.offset,
 					       event.data, event.width);
 				}
-				break;
-			case '1':
+			} else if (trace_line[tlo + 44] == '1') {
 				printf("Current verb 0x%04x Region%d+0x%lx, 0x%x, %d\n",
 				       total_verbs, event.pci_region, event.offset,
 				       event.data, event.width);
