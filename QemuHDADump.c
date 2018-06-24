@@ -53,18 +53,7 @@ int traceLineOffset(char *array)
 void dumpMem(char *array, unsigned short framenumber, int fd, int is_final)
 {
 	int i;
-	// int file = fd;
-	unsigned short frameno = framenumber;
-	unsigned int digit_one, digit_two;
-
-	char *nl = "\n";
-	// char stop[] = "stop\n";
-	// char cont[] = "cont\n";
-	char *pmemsave_part1 = "pmemsave ";
-	char *pmemsave_part2 = " 0x1000 ";
-	char *frame = "frame";
-	char *final = "exit_dump";
-	char frameChar[] = "00\0";
+	char cmdbuf[80];
 
         if (array[0] == '\0')
 	{
@@ -73,41 +62,14 @@ void dumpMem(char *array, unsigned short framenumber, int fd, int is_final)
         } else
 	  printf("dumpMem entered...\n");
 
-	for(i = 0; pmemsave_part1[i]; i++) {
-		ioctl(fd, TIOCSTI, pmemsave_part1+i);
+	if (is_final)
+		sprintf(cmdbuf, "pmemsave %.10s 0x1000 exit_dump\n", array);
+	else
+		sprintf(cmdbuf, "pmemsave %.10s 0x1000 frame%02d\n", array, framenumber);
+
+	for (i = 0; cmdbuf[i]; i++) {
+		ioctl(fd, TIOCSTI, &cmdbuf[i]);
 	}
-
-	for(i = 0; i < 10 && array[i]; i++) {
-		ioctl(fd, TIOCSTI, array+i);
-	}
-
-	for(i = 0; pmemsave_part2[i]; i++) {
-		ioctl(fd, TIOCSTI, pmemsave_part2+i);
-	}
-
-	if(is_final) {
-		for(i = 0; final[i]; i++) {
-			ioctl(fd, TIOCSTI, final+i);
-		}
-	} else {
-		for(i = 0; frame[i]; i++) {
-			ioctl(fd, TIOCSTI, frame+i);
-		}
-
-		digit_one = (frameno % 10);
-		digit_two = (frameno / 10) % 10;
-
-		frameChar[1] = '0' + digit_one;
-		frameChar[0] = '0' + digit_two;
-
-		for(i = 0; frameChar[i]; i++) {
-			ioctl(fd, TIOCSTI, frameChar+i);
-		}
-	}
-
-	ioctl(fd, TIOCSTI, nl);
-
-	return;
 }
 
 int main(int argc, char *argv[])
