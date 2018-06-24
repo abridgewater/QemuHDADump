@@ -11,7 +11,6 @@
 
 #define MAXLINE 128
 #define CORB_BUFF_SIZE 12
-#define REGION_ZERO 0
 #define BAR_REGION_OFFSET 40
 #define BAR_ADDRESS_OFFSET 44
 
@@ -33,12 +32,6 @@ void get_corb_buffer_addr(char *array, char *corb_buffer_addr, unsigned int tlo)
 	putchar('\n');
 
 	return;
-}
-
-unsigned int regionCheck(char *array, unsigned int tlo)
-{
-	return array[tlo + 40];
-
 }
 
 /*
@@ -132,7 +125,6 @@ int main(int argc, char *argv[])
 
 	while(1) {
 		int tlo = 0;  // trace line offset, due to PID
-		unsigned short switch_check = 0;
 		struct trace_event event;
 
 		if (trace_line)
@@ -145,12 +137,10 @@ int main(int argc, char *argv[])
 		  	// ignore non-trace lines
 			continue;
 
-		switch_check = regionCheck(trace_line, tlo);
-
 		/* Check which PCI BAR region it is */
-		switch(switch_check) {
+		switch(event.pci_region) {
 		/* this is the HDA register region */
-		case '0':
+		case 0:
 			switch(trace_line[tlo + 44]) {
 			case '2':
 				if(trace_line[tlo + 45] == '0') {
