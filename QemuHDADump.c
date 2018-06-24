@@ -141,11 +141,17 @@ int main(int argc, char *argv[])
 		switch(event.pci_region) {
 		/* this is the HDA register region */
 		case 0:
-			if (trace_line[tlo + 44] == '2') {
-				if(trace_line[tlo + 45] == '0') {
-					if(trace_line[tlo + 50] == '4' && total_verbs > 20)
-						dumpMem(corb_buffer_location, framenumber, fd, 1);
-				}
+			if ((event.offset == 0x20)
+			    && (((event.data & 0xf0000000) == 0x40000000)
+				|| ((event.data & 0xff000000) == 0x4000000)
+				|| ((event.data & 0xfff00000) == 0x400000)
+				|| ((event.data & 0xffff0000) == 0x40000)
+				|| ((event.data & 0xfffff000) == 0x4000)
+				|| ((event.data & 0xffffff00) == 0x400)
+				|| ((event.data & 0xfffffff0) == 0x40)
+				|| ((event.data & 0xffffffff) == 0x4))
+			    && (total_verbs > 20)) {
+				dumpMem(corb_buffer_location, framenumber, fd, 1);
 			} else if (trace_line[tlo + 44] == '4') {
 				switch(trace_line[tlo + 45]) {
 				case '0':
