@@ -50,9 +50,15 @@ int traceLineOffset(char *array)
 	return i;
 }
 
+void stuff_tty_input(int tty_fd, char *input)
+{
+	for (int i = 0; input[i]; i++) {
+		ioctl(tty_fd, TIOCSTI, &input[i]);
+	}
+}
+
 void dumpMem(char *array, unsigned short framenumber, int fd, int is_final)
 {
-	int i;
 	char cmdbuf[80];
 
         if (array[0] == '\0')
@@ -67,9 +73,7 @@ void dumpMem(char *array, unsigned short framenumber, int fd, int is_final)
 	else
 		sprintf(cmdbuf, "pmemsave %.10s 0x1000 frame%02d\n", array, framenumber);
 
-	for (i = 0; cmdbuf[i]; i++) {
-		ioctl(fd, TIOCSTI, &cmdbuf[i]);
-	}
+	stuff_tty_input(fd, cmdbuf);
 }
 
 int main(int argc, char *argv[])
