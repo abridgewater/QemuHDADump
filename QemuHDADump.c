@@ -170,7 +170,15 @@ int main(int argc, char *argv[])
 				   || ((event.offset & 0xff000000) == 0x48000000)) {
 					total_verbs += 4;
 					printf("0x%04x \n", total_verbs);
-					if(trace_line[tlo + 50] == 'f' && trace_line[tlo + 51] == 'f') {
+					if (((event.offset & 0xff0000ff) == 0x480000ff)
+					    || ((event.offset == 0x48)
+						&& ((event.data == 0xff)
+						    || ((event.data & 0xfffffff0) == 0xff0)
+						    || ((event.data & 0xffffff00) == 0xff00)
+						    || ((event.data & 0xfffff000) == 0xff000)
+						    || ((event.data & 0xffff0000) == 0xff0000)
+						    || ((event.data & 0xfff00000) == 0xff00000)
+						    || ((event.data & 0xff000000) == 0xff000000)))) {
 						dumpMem(corb_buffer_location, framenumber, fd, 0);
 						framenumber++;
 					}
