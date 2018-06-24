@@ -116,19 +116,17 @@ int main(int argc, char *argv[])
 	size_t trace_line_size = MAXLINE;
 	char *trace_line = NULL;
 	unsigned short framenumber = 0;
-	int devno = 1;
 	int fd;
 	unsigned int i = 0;
 	unsigned int total_verbs = 0;
 //	char cont[] = "cont\n";
 
-        if (argc <= devno)
-		return 1;
+	fd = open("/dev/tty", O_RDWR);
 
-	fd = open(argv[devno], O_RDWR);
-
-        if (fd < 0)
+        if (fd < 0) {
+		perror("opening terminal");
 		return 2;
+	}
 
 /*	for(i = 0; cont[i]; i++) {
 		ioctl(fd, TIOCSTI, cont+i);

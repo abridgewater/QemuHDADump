@@ -34,14 +34,9 @@ I thought up the idea, and could only find information on anyone else doing some
   
   Now, to using QemuHDADump.
   
-  This program accesses the current terminal it is opened in to write the dump commands in. So, you'll need to figure out your current terminal by running the tty command. Here's my output, for example:
+  Here's the command you run:
   
-connor@connor-Z97X-Gaming-7:~$ tty
-/dev/pts/4
-
-  So, now, here's the command you run:
-  
-  sudo ./script-for-qemu.sh 2>&1 >/dev/null | ./QemuHDADump /dev/pts/4
+  sudo ./script-for-qemu.sh 2>&1 >/dev/null | ./QemuHDADump
   
   The first command is your qemu startup script. I will include mine for example just in case. The second part, '2>&1 >/dev/null' redirects the stdout to /dev/null, so it doesn't confuse QemuHDADump. It probably wouldn't break it if you didn't, but I prefer keeping it away. It also redirects stderr to stdout, which is then piped to QemuHDADump.
   
