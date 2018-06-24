@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdint.h>
 
 
 #define MAXLINE 128
@@ -13,6 +14,13 @@
 #define REGION_ZERO 0
 #define BAR_REGION_OFFSET 40
 #define BAR_ADDRESS_OFFSET 44
+
+struct trace_event {
+	int pci_region;
+	uint64_t offset;
+	uint32_t data;
+	int width;
+};
 
 void get_corb_buffer_addr(char *array, char *corb_buffer_addr, unsigned int tlo)
 {
@@ -48,6 +56,29 @@ int traceLineOffset(char *array)
 	  ++j;
 	} while(match_chars[j] != 0);
 	return i;
+}
+
+int parse_trace_event(struct trace_event *event, char *input)
+{
+	int name_offset;
+	char terminus;
+
+	name_offset = traceLineOffset(input);
+
+	if (name_offset < 0) return name_offset;
+
+	/* Apparently, sscanf() will silently ignore anything past the
+	 * last match found, so we match for %c after all of our
+	 * parameters and then check to make sure that it is the
+	 * expected close-paren. */
+	if ((sscanf(&input[name_offset+1], "vfio_region_write "
+		    "(%*4x:%*2x:%*2x.%*1d:region%d+%li, %i, %i%c",
+		    &event->pci_region, &event->offset,
+		    &event->data, &event->width, &terminus) == 5)
+	    && (terminus == ')'))
+		return name_offset;
+
+	return -1;
 }
 
 void stuff_tty_input(int tty_fd, char *input)
@@ -103,13 +134,14 @@ int main(int argc, char *argv[])
 	while(1) {
 		int tlo = 0;  // trace line offset, due to PID
 		unsigned short switch_check = 0;
+		struct trace_event event;
 
 		if (trace_line)
 			memset(trace_line, 0, trace_line_size);
 		fflush(stdout);
 		if (getline(&trace_line, &trace_line_size, stdin) == -1)
 		  break;
-		tlo = traceLineOffset(trace_line);
+		tlo = parse_trace_event(&event, trace_line);
 		if (tlo < 0)
 		  	// ignore non-trace lines
 			continue;
