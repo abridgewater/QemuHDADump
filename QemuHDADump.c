@@ -10,8 +10,6 @@
 #include <inttypes.h>
 
 
-#define MAXLINE 128
-
 struct trace_event {
 	int pci_region;
 	uint64_t offset;
@@ -83,7 +81,7 @@ void dumpMem(uint32_t reg_corblbase, unsigned short framenumber, int fd, int is_
 int main(int argc, char *argv[])
 {
 	uint32_t reg_corblbase = 0;
-	size_t trace_line_size = MAXLINE;
+	size_t trace_line_size = 0;
 	char *trace_line = NULL;
 	unsigned short framenumber = 0;
 	int fd;
@@ -106,8 +104,6 @@ int main(int argc, char *argv[])
 		int tlo = 0;  // trace line offset, due to PID
 		struct trace_event event;
 
-		if (trace_line)
-			memset(trace_line, 0, trace_line_size);
 		fflush(stdout);
 		if (getline(&trace_line, &trace_line_size, stdin) == -1)
 		  break;
@@ -184,8 +180,6 @@ int main(int argc, char *argv[])
 			       event.data, event.width);
 			break;
 		}
-		if (trace_line)
-			memset(trace_line, 0, trace_line_size);
 		fflush(stdout);
 	}
 	if (trace_line)
