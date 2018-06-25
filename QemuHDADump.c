@@ -7,10 +7,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdint.h>
+#include <inttypes.h>
 
 
 #define MAXLINE 128
-#define CORB_BUFF_SIZE 12
 #define BAR_REGION_OFFSET 40
 #define BAR_ADDRESS_OFFSET 44
 
@@ -20,19 +20,6 @@ struct trace_event {
 	uint32_t data;
 	int width;
 };
-
-void get_corb_buffer_addr(char *array, char *corb_buffer_addr, unsigned int tlo)
-{
-	unsigned int i;
-	printf("CORB buffer Address:");
-	for(i = 0; array[i + (tlo + 48)] != ','; i++) {
-		corb_buffer_addr[i] = array[i + (tlo + 48)];
-		printf("%c", corb_buffer_addr[i]);
-	}
-	putchar('\n');
-
-	return;
-}
 
 /*
  * Get the character offset from the PID and the time of the trace.
@@ -81,28 +68,23 @@ void stuff_tty_input(int tty_fd, char *input)
 	}
 }
 
-void dumpMem(char *array, unsigned short framenumber, int fd, int is_final)
+void dumpMem(uint32_t reg_corblbase, unsigned short framenumber, int fd, int is_final)
 {
 	char cmdbuf[80];
 
-        if (array[0] == '\0')
-	{
-	  printf("dumpMem entered... but the address is not set, skipping\n");
-	  return;
-        } else
-	  printf("dumpMem entered...\n");
+	printf("dumpMem entered...\n");
 
 	if (is_final)
-		sprintf(cmdbuf, "pmemsave %.10s 0x1000 exit_dump\n", array);
+		sprintf(cmdbuf, "pmemsave 0x%"PRIx32" 0x1000 exit_dump\n", reg_corblbase);
 	else
-		sprintf(cmdbuf, "pmemsave %.10s 0x1000 frame%02d\n", array, framenumber);
+		sprintf(cmdbuf, "pmemsave 0x%"PRIx32" 0x1000 frame%02d\n", reg_corblbase, framenumber);
 
 	stuff_tty_input(fd, cmdbuf);
 }
 
 int main(int argc, char *argv[])
 {
-	char corb_buffer_location[16];
+	uint32_t reg_corblbase = 0;
 	size_t trace_line_size = MAXLINE;
 	char *trace_line = NULL;
 	unsigned short framenumber = 0;
@@ -121,7 +103,6 @@ int main(int argc, char *argv[])
 		ioctl(fd, TIOCSTI, cont+i);
 	}
 */
-        memset(corb_buffer_location, 0, sizeof(corb_buffer_location));
 
 	while(1) {
 		int tlo = 0;  // trace line offset, due to PID
@@ -151,16 +132,12 @@ int main(int argc, char *argv[])
 				|| ((event.data & 0xfffffff0) == 0x40)
 				|| ((event.data & 0xffffffff) == 0x4))
 			    && (total_verbs > 20)) {
-				dumpMem(corb_buffer_location, framenumber, fd, 1);
-			} else if ((event.offset == 0x40)
-				   || ((event.offset & 0xfffffff0) == 0x400)
-				   || ((event.offset & 0xffffff00) == 0x4000)
-				   || ((event.offset & 0xfffff000) == 0x40000)
-				   || ((event.offset & 0xffff0000) == 0x400000)
-				   || ((event.offset & 0xfff00000) == 0x4000000)
-				   || ((event.offset & 0xff000000) == 0x40000000)) {
-					memset(corb_buffer_location, 0, sizeof(corb_buffer_location));
-					get_corb_buffer_addr(trace_line, corb_buffer_location, tlo);
+				dumpMem(reg_corblbase, framenumber, fd, 1);
+			} else if ((event.offset & ~3) == 0x40) {
+				/* CORBLBASE */
+				reg_corblbase = event.data;
+				/* FIXME: Correctly handle sub-dword writes */
+				printf("CORB buffer Address: 0x%"PRIx32"\n", reg_corblbase);
 			} else if ((event.offset == 0x48)
 				   || ((event.offset & 0xfffffff0) == 0x480)
 				   || ((event.offset & 0xffffff00) == 0x4800)
@@ -179,7 +156,7 @@ int main(int argc, char *argv[])
 						    || ((event.data & 0xffff0000) == 0xff0000)
 						    || ((event.data & 0xfff00000) == 0xff00000)
 						    || ((event.data & 0xff000000) == 0xff000000)))) {
-						dumpMem(corb_buffer_location, framenumber, fd, 0);
+						dumpMem(reg_corblbase, framenumber, fd, 0);
 						framenumber++;
 					}
 			} else if (((event.offset & 0xfffffff0) == 0x80)
