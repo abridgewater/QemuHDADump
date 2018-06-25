@@ -104,7 +104,6 @@ int main(int argc, char *argv[])
 		int tlo = 0;  // trace line offset, due to PID
 		struct trace_event event;
 
-		fflush(stdout);
 		if (getline(&trace_line, &trace_line_size, stdin) == -1)
 		  break;
 		tlo = parse_trace_event(&event, trace_line);
