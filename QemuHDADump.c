@@ -11,8 +11,6 @@
 
 
 #define MAXLINE 128
-#define BAR_REGION_OFFSET 40
-#define BAR_ADDRESS_OFFSET 44
 
 struct trace_event {
 	int pci_region;
