@@ -126,27 +126,14 @@ int main(int argc, char *argv[])
 				/* FIXME: Correctly handle sub-dword writes */
 				printf("CORB buffer Address: 0x%"PRIx32"\n",
 				       reg_corblbase);
-			} else if ((event.offset == 0x48)
-				   || ((event.offset & 0xfffffff0) == 0x480)
-				   || ((event.offset & 0xffffff00) == 0x4800)
-				   || ((event.offset & 0xfffff000) == 0x48000)
-				   || ((event.offset & 0xffff0000) == 0x480000)
-				   || ((event.offset & 0xfff00000) == 0x4800000)
-				   || ((event.offset & 0xff000000) == 0x48000000)) {
-					total_verbs += 4;
-					printf("0x%04x \n", total_verbs);
-					if (((event.offset & 0xff0000ff) == 0x480000ff)
-					    || ((event.offset == 0x48)
-						&& ((event.data == 0xff)
-						    || ((event.data & 0xfffffff0) == 0xff0)
-						    || ((event.data & 0xffffff00) == 0xff00)
-						    || ((event.data & 0xfffff000) == 0xff000)
-						    || ((event.data & 0xffff0000) == 0xff0000)
-						    || ((event.data & 0xfff00000) == 0xff00000)
-						    || ((event.data & 0xff000000) == 0xff000000)))) {
-						dumpMem(reg_corblbase, framenumber, fd, 0);
-						framenumber++;
-					}
+			} else if (event.offset == 0x48) {
+				/* CORBWP */
+				total_verbs += 4;
+				printf("0x%04x \n", total_verbs);
+				if ((event.data & 0xff) == 0xff) {
+					dumpMem(reg_corblbase, framenumber, fd, 0);
+					framenumber++;
+				}
 			} else if (((event.offset & 0xfffffff0) == 0x80)
 				   || ((event.offset & 0xffffff00) == 0x800)
 				   || ((event.offset & 0xfffff000) == 0x8000)
