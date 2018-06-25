@@ -26,10 +26,10 @@ int traceLineOffset(char *array)
 	char match_chars[] = { '@', '.', ':', 0 };
 	i = j = 0;
 	do {
-	  for(;array[i] && array[i] != match_chars[j]; i++);
-	  if (array[i] != match_chars[j])
-	    return -1;
-	  ++j;
+		for(;array[i] && array[i] != match_chars[j]; i++);
+		if (array[i] != match_chars[j])
+			return -1;
+		++j;
 	} while(match_chars[j] != 0);
 	return i;
 }
@@ -71,9 +71,11 @@ void dumpMem(uint32_t reg_corblbase, unsigned short framenumber, int fd, int is_
 	printf("dumpMem entered...\n");
 
 	if (is_final)
-		sprintf(cmdbuf, "pmemsave 0x%"PRIx32" 0x1000 exit_dump\n", reg_corblbase);
+		sprintf(cmdbuf, "pmemsave 0x%"PRIx32" 0x1000 exit_dump\n",
+			reg_corblbase);
 	else
-		sprintf(cmdbuf, "pmemsave 0x%"PRIx32" 0x1000 frame%02d\n", reg_corblbase, framenumber);
+		sprintf(cmdbuf, "pmemsave 0x%"PRIx32" 0x1000 frame%02d\n",
+			reg_corblbase, framenumber);
 
 	stuff_tty_input(fd, cmdbuf);
 }
@@ -86,7 +88,6 @@ int main(int argc, char *argv[])
 	unsigned short framenumber = 0;
 	int fd;
 	unsigned int total_verbs = 0;
-//	char cont[] = "cont\n";
 
 	fd = open("/dev/tty", O_RDWR);
 
@@ -95,24 +96,19 @@ int main(int argc, char *argv[])
 		return 2;
 	}
 
-/*	for(i = 0; cont[i]; i++) {
-		ioctl(fd, TIOCSTI, cont+i);
-	}
-*/
-
-	while(1) {
+	while (1) {
 		struct trace_event event;
 
 		if (getline(&trace_line, &trace_line_size, stdin) == -1)
-		  break;
-		if (parse_trace_event(&event, trace_line) < 0)
-		  	// ignore non-trace lines
+			break;
+		if (parse_trace_event(&event, trace_line) < 0) {
+		  	/* ignore non-trace lines */
 			continue;
+		}
 
 		/* Check which PCI BAR region it is */
 		switch(event.pci_region) {
-		/* this is the HDA register region */
-		case 0:
+		case 0: /* HDA registers */
 			if ((event.offset == 0x20)
 			    && (((event.data & 0xf0000000) == 0x40000000)
 				|| ((event.data & 0xff000000) == 0x4000000)
@@ -128,7 +124,8 @@ int main(int argc, char *argv[])
 				/* CORBLBASE */
 				reg_corblbase = event.data;
 				/* FIXME: Correctly handle sub-dword writes */
-				printf("CORB buffer Address: 0x%"PRIx32"\n", reg_corblbase);
+				printf("CORB buffer Address: 0x%"PRIx32"\n",
+				       reg_corblbase);
 			} else if ((event.offset == 0x48)
 				   || ((event.offset & 0xfffffff0) == 0x480)
 				   || ((event.offset & 0xffffff00) == 0x4800)
@@ -180,9 +177,6 @@ int main(int argc, char *argv[])
 		fflush(stdout);
 	}
 	if (trace_line)
-	  free(trace_line);
+		free(trace_line);
 	return 0;
 }
-
-
-
