@@ -101,13 +101,11 @@ int main(int argc, char *argv[])
 */
 
 	while(1) {
-		int tlo = 0;  // trace line offset, due to PID
 		struct trace_event event;
 
 		if (getline(&trace_line, &trace_line_size, stdin) == -1)
 		  break;
-		tlo = parse_trace_event(&event, trace_line);
-		if (tlo < 0)
+		if (parse_trace_event(&event, trace_line) < 0)
 		  	// ignore non-trace lines
 			continue;
 
@@ -174,8 +172,8 @@ int main(int argc, char *argv[])
 
 			break;
 		default:
-			printf("Current verb 0x%04x tlo = %i Region%d+0x%lx, 0x%x, %d\n",
-			       total_verbs, tlo, event.pci_region, event.offset,
+			printf("Current verb 0x%04x Region%d+0x%lx, 0x%x, %d\n",
+			       total_verbs, event.pci_region, event.offset,
 			       event.data, event.width);
 			break;
 		}
