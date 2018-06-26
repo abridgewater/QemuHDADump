@@ -83,6 +83,7 @@ void dumpMem(uint32_t reg_corblbase, unsigned short framenumber, int fd, int is_
 int main(int argc, char *argv[])
 {
 	uint32_t reg_corblbase = 0;
+	uint16_t reg_corbrp = 0;
 	size_t trace_line_size = 0;
 	char *trace_line = NULL;
 	unsigned short framenumber = 0;
@@ -133,6 +134,21 @@ int main(int argc, char *argv[])
 				if ((event.data & 0xff) == 0xff) {
 					dumpMem(reg_corblbase, framenumber, fd, 0);
 					framenumber++;
+				}
+			} else if ((event.offset == 0x4a)
+				   && (event.width >= 2)) {
+				/* CORBRP */
+				if (!(event.data & 0x8000)
+				    && (reg_corbrp & 0x8000)) {
+					/* On the falling edge of
+					 * CORBRPRST, the controller
+					 * clears CORBRP */
+					reg_corbrp = 0;
+				} else {
+					/* CORBRPRST is the only
+					 * writable part of CORBRP */
+					reg_corbrp = (reg_corbrp & 0xff)
+						| (event.data & 0x8000);
 				}
 			} else if (((event.offset & 0xfffffff0) == 0x80)
 				   || ((event.offset & 0xffffff00) == 0x800)
