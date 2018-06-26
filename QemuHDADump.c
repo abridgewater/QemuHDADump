@@ -135,6 +135,11 @@ struct corb_dma_state {
 	int corbrun;
 };
 
+void print_decode_verb(uint32_t verb)
+{
+	printf("verb: 0x%08"PRIx32"\n", verb);
+}
+
 void corb_dma_update(struct corb_dma_state *corb_dma, int tty_fd, int data_fifo_fd)
 {
 	if (!corb_dma->corbrun)
@@ -165,7 +170,7 @@ void corb_dma_update(struct corb_dma_state *corb_dma, int tty_fd, int data_fifo_
 				 &dma_buffer[first_new_index],
 				 (corb_dma->corbsize - first_new_index) * 4);
 		for (i = first_new_index; i < corb_dma->corbsize; i++)
-			printf("verb: 0x%08"PRIx32"\n", dma_buffer[i]);
+			print_decode_verb(dma_buffer[i]);
 		first_new_index = 0;
 	}
 
@@ -174,7 +179,7 @@ void corb_dma_update(struct corb_dma_state *corb_dma, int tty_fd, int data_fifo_
 			 &dma_buffer[first_new_index],
 			 (last_new_index - first_new_index + 1) * 4);
 	for (i = first_new_index; i <= last_new_index; i++)
-		printf("verb: 0x%08"PRIx32"\n", dma_buffer[i]);
+		print_decode_verb(dma_buffer[i]);
 
 	corb_dma->reg_corbrp =
 		(corb_dma->reg_corbrp & 0xff00)
