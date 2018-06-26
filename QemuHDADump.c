@@ -135,7 +135,7 @@ struct corb_dma_state {
 	int corbrun;
 };
 
-void corb_dma_update(struct corb_dma_state *corb_dma)
+void corb_dma_update(struct corb_dma_state *corb_dma, int tty_fd, int data_fifo_fd)
 {
 	if (!corb_dma->corbrun)
 		/* DMA engine is stopped, nothing to do */
@@ -147,6 +147,34 @@ void corb_dma_update(struct corb_dma_state *corb_dma)
 	    == (corb_dma->reg_corbwp & sizemask))
 		/* CORB is empty, nothing to do */
 		return;
+
+	int first_new_index = (corb_dma->reg_corbrp + 1) & sizemask;
+	int last_new_index = corb_dma->reg_corbwp & sizemask;
+
+	uint32_t dma_buffer[256];
+	int i;
+
+	if (first_new_index > last_new_index) {
+		/* there is more than one verb to transfer, and the
+		 * ring buffer wrapped around; deal with the top end
+		 * first, then arrange for the bottom end to happen
+		 * normally */
+		fetch_dma_memory(tty_fd, data_fifo_fd,
+				 corb_dma->reg_corblbase
+				 + (first_new_index * 4),
+				 &dma_buffer[first_new_index],
+				 (corb_dma->corbsize - first_new_index) * 4);
+		for (i = first_new_index; i < corb_dma->corbsize; i++)
+			printf("verb: 0x%08"PRIx32"\n", dma_buffer[i]);
+		first_new_index = 0;
+	}
+
+	fetch_dma_memory(tty_fd, data_fifo_fd,
+			 corb_dma->reg_corblbase + (first_new_index * 4),
+			 &dma_buffer[first_new_index],
+			 (last_new_index - first_new_index + 1) * 4);
+	for (i = first_new_index; i <= last_new_index; i++)
+		printf("verb: 0x%08"PRIx32"\n", dma_buffer[i]);
 
 	corb_dma->reg_corbrp =
 		(corb_dma->reg_corbrp & 0xff00)
@@ -217,7 +245,7 @@ int main(int argc, char *argv[])
 			} else if (event.offset == 0x48) {
 				/* CORBWP */
 				corb_dma.reg_corbwp = event.data & 0xff;
-				corb_dma_update(&corb_dma);
+				corb_dma_update(&corb_dma, fd, data_fifo_fd);
 				total_verbs += 4;
 				printf("0x%04x \n", total_verbs);
 				if (corb_dma.reg_corbwp == 0xff) {
@@ -244,7 +272,7 @@ int main(int argc, char *argv[])
 				/* CORBCTL */
 				/* FIXME: DWORD writes here also hit CORBSIZE */
 				corb_dma.corbrun = !!(event.data & 2);
-				corb_dma_update(&corb_dma);
+				corb_dma_update(&corb_dma, fd, data_fifo_fd);
 			} else if (event.offset == 0x4e) {
 				/* CORBSIZE */
 				const char *size_texts[4] = {"2 entries",
