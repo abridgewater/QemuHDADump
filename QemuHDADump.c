@@ -10,6 +10,7 @@
 #include <inttypes.h>
 #include <errno.h>
 #include <sys/param.h>
+#include <poll.h>
 
 
 struct trace_event {
@@ -104,6 +105,26 @@ void dumpMem(uint32_t reg_corblbase, unsigned short framenumber, int fd, int is_
 			reg_corblbase, framenumber);
 
 	stuff_tty_input(fd, cmdbuf);
+}
+
+void fetch_dma_memory(int tty_fd, int data_fifo_fd, uint32_t address, void *buf, size_t count)
+{
+	char cmdbuf[80];
+	struct pollfd fifo_poll;
+
+	sprintf(cmdbuf, "pmemsave 0x%"PRIx32" 0x%lx \"%s\"\n",
+		address, count, data_fifo_name);
+	stuff_tty_input(tty_fd, cmdbuf);
+
+	/* Wait until qemu has sent our data */
+	fifo_poll.fd = data_fifo_fd;
+	fifo_poll.events = POLLIN;
+	poll(&fifo_poll, 1, -1);
+
+	/* And obtain our data */
+	if (read(data_fifo_fd, buf, count) < 0) {
+		perror("data fifo read");
+	}
 }
 
 struct corb_dma_state {
