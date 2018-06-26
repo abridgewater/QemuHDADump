@@ -80,11 +80,19 @@ void dumpMem(uint32_t reg_corblbase, unsigned short framenumber, int fd, int is_
 	stuff_tty_input(fd, cmdbuf);
 }
 
+struct corb_dma_state {
+	uint32_t reg_corblbase;
+	uint8_t reg_corbwp;
+	uint16_t reg_corbrp;
+};
+
 int main(int argc, char *argv[])
 {
-	uint32_t reg_corblbase = 0;
-	uint8_t reg_corbwp = 0;
-	uint16_t reg_corbrp = 0;
+	struct corb_dma_state corb_dma = {
+		.reg_corblbase = 0,
+		.reg_corbwp = 0,
+		.reg_corbrp = 0
+	};
 	size_t trace_line_size = 0;
 	char *trace_line = NULL;
 	unsigned short framenumber = 0;
@@ -121,35 +129,36 @@ int main(int argc, char *argv[])
 				|| ((event.data & 0xfffffff0) == 0x40)
 				|| ((event.data & 0xffffffff) == 0x4))
 			    && (total_verbs > 20)) {
-				dumpMem(reg_corblbase, framenumber, fd, 1);
+				dumpMem(corb_dma.reg_corblbase, framenumber, fd, 1);
 			} else if ((event.offset & ~3) == 0x40) {
 				/* CORBLBASE */
-				reg_corblbase = event.data;
+				corb_dma.reg_corblbase = event.data;
 				/* FIXME: Correctly handle sub-dword writes */
 				printf("CORB buffer Address: 0x%"PRIx32"\n",
-				       reg_corblbase);
+				       corb_dma.reg_corblbase);
 			} else if (event.offset == 0x48) {
 				/* CORBWP */
-				reg_corbwp = event.data & 0xff;
+				corb_dma.reg_corbwp = event.data & 0xff;
 				total_verbs += 4;
 				printf("0x%04x \n", total_verbs);
-				if (reg_corbwp == 0xff) {
-					dumpMem(reg_corblbase, framenumber, fd, 0);
+				if (corb_dma.reg_corbwp == 0xff) {
+					dumpMem(corb_dma.reg_corblbase, framenumber, fd, 0);
 					framenumber++;
 				}
 			} else if ((event.offset == 0x4a)
 				   && (event.width >= 2)) {
 				/* CORBRP */
 				if (!(event.data & 0x8000)
-				    && (reg_corbrp & 0x8000)) {
+				    && (corb_dma.reg_corbrp & 0x8000)) {
 					/* On the falling edge of
 					 * CORBRPRST, the controller
 					 * clears CORBRP */
-					reg_corbrp = 0;
+					corb_dma.reg_corbrp = 0;
 				} else {
 					/* CORBRPRST is the only
 					 * writable part of CORBRP */
-					reg_corbrp = (reg_corbrp & 0xff)
+					corb_dma.reg_corbrp =
+						(corb_dma.reg_corbrp & 0xff)
 						| (event.data & 0x8000);
 				}
 			} else if (((event.offset & 0xfffffff0) == 0x80)
