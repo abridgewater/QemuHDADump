@@ -83,6 +83,7 @@ void dumpMem(uint32_t reg_corblbase, unsigned short framenumber, int fd, int is_
 int main(int argc, char *argv[])
 {
 	uint32_t reg_corblbase = 0;
+	uint8_t reg_corbwp = 0;
 	uint16_t reg_corbrp = 0;
 	size_t trace_line_size = 0;
 	char *trace_line = NULL;
@@ -129,9 +130,10 @@ int main(int argc, char *argv[])
 				       reg_corblbase);
 			} else if (event.offset == 0x48) {
 				/* CORBWP */
+				reg_corbwp = event.data & 0xff;
 				total_verbs += 4;
 				printf("0x%04x \n", total_verbs);
-				if ((event.data & 0xff) == 0xff) {
+				if (reg_corbwp == 0xff) {
 					dumpMem(reg_corblbase, framenumber, fd, 0);
 					framenumber++;
 				}
