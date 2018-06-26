@@ -84,18 +84,19 @@ struct corb_dma_state {
 	uint32_t reg_corblbase;
 	uint8_t reg_corbwp;
 	uint16_t reg_corbrp;
+	int corbsize;
 };
 
 void corb_dma_update(struct corb_dma_state *corb_dma)
 {
-	if ((corb_dma->reg_corbrp & 0xff)
-	    == corb_dma->reg_corbwp)
+	if ((corb_dma->reg_corbrp & (corb_dma->corbsize - 1))
+	    == (corb_dma->reg_corbwp & (corb_dma->corbsize - 1)))
 		/* CORB is empty, nothing to do */
 		return;
 
 	corb_dma->reg_corbrp =
 		(corb_dma->reg_corbrp & 0xff00)
-		| corb_dma->reg_corbwp;
+		| (corb_dma->reg_corbwp & (corb_dma->corbsize - 1));
 }
 
 int main(int argc, char *argv[])
@@ -103,7 +104,8 @@ int main(int argc, char *argv[])
 	struct corb_dma_state corb_dma = {
 		.reg_corblbase = 0,
 		.reg_corbwp = 0,
-		.reg_corbrp = 0
+		.reg_corbrp = 0,
+		.corbsize = 1 /* unknown CORB size */
 	};
 	size_t trace_line_size = 0;
 	char *trace_line = NULL;
@@ -174,6 +176,19 @@ int main(int argc, char *argv[])
 						(corb_dma.reg_corbrp & 0xff)
 						| (event.data & 0x8000);
 				}
+			} else if (event.offset == 0x4e) {
+				/* CORBSIZE */
+				const char *size_texts[4] = {"2 entries",
+							     "16 entries",
+							     "256 entries",
+							     "reserved"};
+				const int size_values[4] = {2, 16, 256, 1};
+				/* We treat "reserved" as 1, and then
+				 * 1 as meaning "unknown CORB size",
+				 * disabling CORB tracking */
+				printf("CORB size set: %s\n",
+				       size_texts[event.data & 3]);
+				corb_dma.corbsize = size_values[event.data & 3];
 			} else if (((event.offset & 0xfffffff0) == 0x80)
 				   || ((event.offset & 0xffffff00) == 0x800)
 				   || ((event.offset & 0xfffff000) == 0x8000)
