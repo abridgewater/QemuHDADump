@@ -8,6 +8,8 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <inttypes.h>
+#include <errno.h>
+#include <sys/param.h>
 
 
 struct trace_event {
@@ -64,6 +66,30 @@ void stuff_tty_input(int tty_fd, char *input)
 	}
 }
 
+char data_fifo_name[PATH_MAX];
+
+void release_data_fifo(void)
+{
+	unlink(data_fifo_name);
+}
+
+void prepare_data_fifo(void)
+{
+	int i;
+
+	for (i = 0; ; i++) {
+		sprintf(data_fifo_name, "/tmp/QemuHDADumpFIFO-%d", i);
+		if (!mkfifo(data_fifo_name, 0666)) { /* stupid octal mode flags */
+			atexit(release_data_fifo);
+			return;
+		}
+		if (errno != EEXIST) {
+			perror("creating data fifo");
+			exit(1);
+		}
+	}
+}
+
 void dumpMem(uint32_t reg_corblbase, unsigned short framenumber, int fd, int is_final)
 {
 	char cmdbuf[80];
@@ -117,6 +143,7 @@ int main(int argc, char *argv[])
 	char *trace_line = NULL;
 	unsigned short framenumber = 0;
 	int fd;
+	int data_fifo_fd;
 	unsigned int total_verbs = 0;
 
 	fd = open("/dev/tty", O_RDWR);
@@ -124,6 +151,14 @@ int main(int argc, char *argv[])
         if (fd < 0) {
 		perror("opening terminal");
 		return 2;
+	}
+
+	prepare_data_fifo();
+
+	data_fifo_fd = open(data_fifo_name, O_RDWR);
+	if (data_fifo_fd < 0) {
+		perror("opening data fifo");
+		return 1;
 	}
 
 	while (1) {
