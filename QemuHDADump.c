@@ -120,14 +120,16 @@ void corb_dma_update(struct corb_dma_state *corb_dma)
 		/* DMA engine is stopped, nothing to do */
 		return;
 
-	if ((corb_dma->reg_corbrp & (corb_dma->corbsize - 1))
-	    == (corb_dma->reg_corbwp & (corb_dma->corbsize - 1)))
+	uint8_t sizemask = corb_dma->corbsize - 1;
+
+	if ((corb_dma->reg_corbrp & sizemask)
+	    == (corb_dma->reg_corbwp & sizemask))
 		/* CORB is empty, nothing to do */
 		return;
 
 	corb_dma->reg_corbrp =
 		(corb_dma->reg_corbrp & 0xff00)
-		| (corb_dma->reg_corbwp & (corb_dma->corbsize - 1));
+		| (corb_dma->reg_corbwp & sizemask);
 }
 
 int main(int argc, char *argv[])
