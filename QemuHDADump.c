@@ -86,6 +86,18 @@ struct corb_dma_state {
 	uint16_t reg_corbrp;
 };
 
+void corb_dma_update(struct corb_dma_state *corb_dma)
+{
+	if ((corb_dma->reg_corbrp & 0xff)
+	    == corb_dma->reg_corbwp)
+		/* CORB is empty, nothing to do */
+		return;
+
+	corb_dma->reg_corbrp =
+		(corb_dma->reg_corbrp & 0xff00)
+		| corb_dma->reg_corbwp;
+}
+
 int main(int argc, char *argv[])
 {
 	struct corb_dma_state corb_dma = {
@@ -139,6 +151,7 @@ int main(int argc, char *argv[])
 			} else if (event.offset == 0x48) {
 				/* CORBWP */
 				corb_dma.reg_corbwp = event.data & 0xff;
+				corb_dma_update(&corb_dma);
 				total_verbs += 4;
 				printf("0x%04x \n", total_verbs);
 				if (corb_dma.reg_corbwp == 0xff) {
