@@ -137,7 +137,11 @@ struct corb_dma_state {
 
 void print_decode_verb(uint32_t verb)
 {
-	printf("verb: 0x%08"PRIx32"\n", verb);
+	printf("verb: codec 0x%d, indirect %d, nid 0x%02x, payload 0x%05x\n",
+	       verb >> 28,
+	       !!(verb & 0x08000000),
+	       (verb >> 20) & 0x7f,
+	       verb & 0xfffff);
 }
 
 void corb_dma_update(struct corb_dma_state *corb_dma, int tty_fd, int data_fifo_fd)
